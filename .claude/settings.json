@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(source ferramentas/nuvem.sh)",
+      "Bash(npm run renderizar:*)"
+    ]
+  }
+}
