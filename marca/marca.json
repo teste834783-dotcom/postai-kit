@@ -1,7 +1,7 @@
 {
-  "nome": "Sua Marca",
-  "site": "suamarca.com.br",
-  "instagram": "@suamarca",
+  "nome": "Devocionalzinho",
+  "site": "",
+  "instagram": "@cortesmaromba777",
   "cores": {
     "fundo": "#FFF8F0",
     "superficie": "#FFFFFF",
@@ -14,8 +14,8 @@
     "titulo": "Bricolage Grotesque",
     "texto": "Inter"
   },
-  "logo": null,
+  "logo": "marca/logo-canal.png",
   "tom": "próximo e animado, frases curtas, sem gíria pesada",
-  "publico": "quem mora perto e compra pelo Instagram",
-  "chamada": "Peça pelo link da bio"
+  "publico": "",
+  "chamada": "Siga para ver mais"
 }
