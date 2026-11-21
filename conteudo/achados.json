@@ -1,0 +1,47 @@
+{
+ "termo": "Biblical",
+ "videos": [
+  {
+   "link": "https://www.youtube.com/watch?v=IzvIA0E4TB8",
+   "porque": "Lista de 7 segredos sobre o Éden, 40 min; nome genérico, parece dark (palpite)."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=Qj-SNsRaLDQ",
+   "porque": "Filme bíblico de Sansão com imagens de IA, 25 min; parece dark (palpite)."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=SFtS6UFVmQY",
+   "porque": "História de Sansão animada com IA em tâmil, 20 min; parece dark, mas o idioma foge do inglês (palpite)."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=G0eykzwkQb4",
+   "porque": "Pergunta com gancho sobre Jonas e o hebraico, 20 min; nome genérico, parece dark (palpite)."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=pNKBrrdU4Bc",
+   "porque": "Episódio de série explicando um versículo, 16 min; pode ser dark (palpite)."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=vGb4JEEFxo8",
+   "porque": "Profecia com título alarmista, 1h20; cita uma pessoa, pode ter rosto (palpite)."
+  }
+ ],
+ "canais": [],
+ "cacada": {
+  "nicho": "Biblical",
+  "juntar": true,
+  "excluir": [
+   "the chosen",
+   "sermon",
+   "pastor",
+   "church service",
+   "live",
+   "reaction",
+   "podcast",
+   "for kids"
+  ],
+  "maxInscritos": 2000,
+  "minViews": 3000,
+  "dias": 7
+ }
+}
