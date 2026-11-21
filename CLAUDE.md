@@ -26,7 +26,7 @@ Converse e escreva em **português do Brasil**, com frases simples: quem usa nem
 ```
 marca/marca.json          cores, fontes, logo, tom, público e chamada (do dono)
 conteudo/                 uma peça por arquivo JSON (do dono); exemplos em exemplo-*.json
-public/                   marca/ (logo), produtos/, fotos/, sites/, musica/ (do dono)
+public/                   marca/ (logo; vinheta.* = vinheta do fim, baixada pelo npm run canal e colada pelo npm run renderizar no fim de todo vídeo; fim.json = como termina: chamada, vinheta ou ambos), produtos/, fotos/, sites/, musica/ (do dono)
                           sfx/ (efeitos sonoros do kit), exemplos/
 src/nucleo/               marca.ts (lê o marca.json e carrega as fontes), animacao.ts (curvas)
 src/componentes/
@@ -34,6 +34,7 @@ src/componentes/
   texto/Legendas          legenda da narração, com a palavra falada em destaque
   personagens/Mascote     mascote na cor da marca que fala junto com a narração
   personagens/Apresentador a pessoa falando (vídeo do npm run avatar)
+  cenarios/Cenarios        os 7 lugares do kit e os criados pela equipe (SVG; npm run cenario faz a ficha e grava no canal, npm run cenarios põe no roteiro)
   3d/                     Palco3D (câmera e luzes), Titulo3D (letras com volume na fonte da
                           marca), Cartao3D (foto num cartão girando), Formas3D (formas ao fundo)
   base                    Fundo, Foto, Assinatura (logo), Selo (preço), arquivo()

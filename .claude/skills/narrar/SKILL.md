@@ -1,11 +1,11 @@
 ---
 name: narrar
-description: Vídeo com narração no Kit Estúdio: uma voz em português lê o roteiro, com legenda animada palavra por palavra e, se o dono quiser, o mascote da marca falando junto (molde Narrado). Instala a voz no computador na primeira vez. Usar quando o dono pedir vídeo narrado, com voz, locução, "alguém falando", legenda animada ou mascote, mesmo sem citar a skill.
+description: Vídeo com narração no Kit Estúdio: uma voz lê o roteiro no idioma do canal (português, inglês ou espanhol), com legenda animada palavra por palavra e, se o dono quiser, o mascote da marca falando junto (molde Narrado). Instala a voz no computador na primeira vez. Usar quando o dono pedir vídeo narrado, com voz, locução, "alguém falando", legenda animada ou mascote, mesmo sem citar a skill.
 ---
 
 # Vídeo narrado
 
-Tudo em pt-BR. A voz é gerada no computador do dono, sem custo por vídeo: Kokoro (voz, Apache 2.0),
+A voz fala o idioma do canal (português, inglês ou espanhol, voz nativa de cada língua); as mensagens para o dono, em pt-BR. A voz é gerada no computador do dono, sem custo por vídeo: Kokoro (voz, Apache 2.0),
 faster-whisper (confere a fala e dá o tempo da legenda, MIT) e, para o mascote, o Rhubarb (boca, MIT).
 
 ## 1. Instalar (só na primeira vez)
@@ -32,7 +32,7 @@ Molde `Narrado` (exemplo em `conteudo/exemplo-narrado.json`). Cada cena tem:
   `print` + `proporcao` + `rolagem` (o site no celular; ver `npm run capturar-site`), `animacao`
   (sucesso, confete, estrelas, curtida, seta).
 
-No topo: `voz` (`pf_dora` feminina; `pm_alex` ou `pm_santa` masculinas), `velocidade` (1 = normal),
+No topo: `voz` (um id de `src/componentes/personagens/vozes.ts`, de `feminina-1` a `feminina-15` ou de `masculina-1` a `masculina-15`, escolhido pelo `nicho` de cada uma; ou o nome do Kokoro: `pf_dora`, `pm_alex`, `pm_santa`), `velocidade` (1 = normal),
 `mascote` (true/false), `avatar` (`"tela"` ou `"janela"`: a pessoa falando, ver a skill `avatar`), `legendas` (true), `chamada`, `musica` (fica baixinha) e `post`.
 
 Pode escrever preço, hora, porcentagem, @ e site normalmente ("R$ 12,90", "das 8h às 18h", "50%",

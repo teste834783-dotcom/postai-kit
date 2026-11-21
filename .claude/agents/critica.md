@@ -17,16 +17,24 @@ Leia `out/<arquivo>/info.json` (duração), o roteiro em `conteudo/<arquivo>.jso
 source ferramentas/nuvem.sh && for t in <segundos>; do npx remotion ffmpeg -y -loglevel error -ss $t -i out/<arquivo>/video.mp4 -frames:v 1 -vf scale=540:-2 out/<arquivo>/critica-$t.jpg; done
 ```
 
-Abra (Read) **todos** os quadros, em ordem, e a `out/<arquivo>/capa.jpg`.
+Depois, **de perto, cena por cena**: `source ferramentas/nuvem.sh && npm run quadros -- conteudo/<arquivo>.json`. Ele tira três quadros grandes de cada cena (começo, meio e fim: pega a troca de pose no meio da fala) e diz ao lado de cada um o que TEM que aparecer (a pose e a expressão de cada personagem, quem está com o celular, a luz do aviso).
+
+Abra (Read) **todos** os quadros, em ordem (os de 1,5 s e os de `out/<arquivo>/quadros/`), e a `out/<arquivo>/capa.jpg`. Em cada quadro de `quadros/`, compare com o que o comando disse que tem que aparecer.
 
 ## 2. Confira
 
 **Num ajuste** (a coordenadora diz o que o dono pediu), confira primeiro se o pedido dele foi atendido, olhando os quadros. Se não foi, é `CORRIGIR`, mesmo que o resto esteja bom.
 
 **Erros (qualquer um reprova):**
+- **o vídeo não segue o combinado com o dono:** o modelo e o fundo do `estilo` do roteiro não aparecem (ex.: era palito na noite e saiu boneco colorido no claro), ou, se o `canal-postai.md` tiver a "Receita de cada vídeo", algum passo dela falta ou está fora de ordem. Diga qual passo faltou e quem corrige (roteirista, se o roteiro não tem o passo; diretora de arte, se o roteiro tem e o quadro não mostra). Se o kit não desenha o passo, anote com `npm run limite` e não reprove por isso;
 - algo cortado, sobreposto ou fora do lugar; rosto coberto por título, cartão, balão ou legenda;
-- texto com erro de português ou palavra faltando (título, balão, cartão do fim, legendas);
-- o balão do começo em mais de uma linha ou cortado; o cartão do fim sem o logo, a chamada ou o botão; legenda vazando por baixo do cartão;
+- **objeto que some ou que não está lá:** quem está na pose celular ou sentado SEM o celular na mão; luz, brilho ou feixe de celular sem o celular (só a luz na mão vazia); um objeto que estava na mão e some de uma cena para a outra sem a história pedir (devolva à diretora-de-arte: a pose certa na cena certa);
+- **corpo errado:** personagem sem pernas, cortado no quadril ou "dentro" do sofá, da cama ou da mesa (atrás do móvel, com as pernas cobertas pela frente dele, está certo); pés afundados ou flutuando; parte do corpo fora da tela (devolva à diretora-de-arte; sentado só funciona no quarto, na sala ou num cenário com frente, e só para quem está à esquerda);
+- texto com erro de escrita na língua do canal (português, inglês ou espanhol: a do roteiro) ou palavra faltando (título, balão, cartão do fim, legendas);
+- sobrancelha dobrada (duas linhas em cima do olho; devolva à designer-de-personagens);
+- personagem com braço a mais (4 braços: um par parado e outro mexendo) ou mão sobrando (devolva à designer-de-personagens: o braço desenhado sai do corpo);
+- cenário criado pela equipe feio, irreconhecível ou cobrindo o rosto de alguém (devolva à designer-de-personagens);
+- o balão do começo em mais de uma linha ou cortado; o cartão do fim sem o logo, a chamada ou o botão (a vinheta do fim do dono, se houver, entra sozinha depois dele no renderizar: não peça para pôr no roteiro); legenda vazando por baixo do cartão;
 - @, site ou texto de exemplo ("Sua Marca", "@suamarca", "suamarca.com.br") aparecendo no vídeo;
 - personagem parado na mesma pose e expressão por 3 quadros seguidos ou mais;
 - a capa sem as personagens inteiras, com título ilegível ou destaque na palavra errada.

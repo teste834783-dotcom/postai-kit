@@ -1,5 +1,5 @@
-// Conferência automática de um episódio animado (molde Conversa) ou de um
-// vídeo do Canal dark (molde Documentario), antes de
+// Conferência automática de um episódio animado (molde Conversa ou Mundo3D) ou
+// de um vídeo do Canal dark (molde Documentario), antes de
 // renderizar. Confere o que é regra fixa e não depende de gosto: tamanhos,
 // CTAs, @ e texto de exemplo, movimento dos personagens, capa e post. Não
 // gasta nada do Claude e não se distrai. O gosto (graça, ritmo, beleza) fica
@@ -9,6 +9,7 @@
 //
 // Uso: npm run conferir -- conteudo/<arquivo>.json
 import { existsSync, readFileSync } from "node:fs";
+import { cenariosFaltando } from "./cenarios-do-roteiro.ts";
 
 const arquivo = process.argv.slice(2).find((arg) => !arg.startsWith("--"));
 if (!arquivo || !existsSync(arquivo)) {
@@ -120,22 +121,92 @@ if (peca.molde === "Documentario") {
     if (tamanho(doc.post.titulo) > 100) erro("roteirista-narrado", `post.titulo com ${tamanho(doc.post.titulo)} caracteres (até 100)`);
     if (tamanho(doc.post.legenda) > 1800) erro("roteirista-narrado", `post.legenda com ${tamanho(doc.post.legenda)} caracteres (até 1.800: os capítulos entram depois)`);
   }
+  // Foto do Unsplash (e a capa): o crédito na legenda do post é obrigatório (o buscar-fotos anota no CREDITOS.md)
+  const usadas = new Set([...usos.keys(), ...(doc.capa?.foto ? [doc.capa.foto] : [])]);
+  for (const pasta of new Set([...usadas].map((f) => f.split("/").slice(0, -1).join("/")))) {
+    const caminho = `public/${pasta}/CREDITOS.md`;
+    if (!existsSync(caminho)) continue;
+    for (const linha of readFileSync(caminho, "utf8").split("\n")) {
+      const colunas = linha.split("|").map((c) => c.trim());
+      // | arquivo | fonte | original | id | crédito |
+      if (colunas[2] !== "unsplash" || !usadas.has(`${pasta}/${colunas[1]}`)) continue;
+      const autor = (colunas[5] ?? "").replace(/^Foto de /, "").replace(/ no Unsplash$/, "");
+      if (autor && !(doc.post?.legenda ?? "").includes(autor))
+        erro("roteirista-narrado", `falta o crédito do Unsplash na legenda do post: "${colunas[5]}" (foto ${colunas[1]})`);
+    }
+  }
   const textoTodo = JSON.stringify({ ...doc, cenas: longas.map(({ narracao: _n, ...resto }) => resto) });
   if (/sua ?marca|@suamarca|lorem ipsum/i.test(textoTodo)) erro("roteirista-narrado", 'texto de exemplo ("Sua Marca") no roteiro');
   console.log(`Documentario: ${longas.length} cenas, ${total} palavras (alvo ~${alvo}), ${capitulos.length} capítulos, ${usos.size} imagens.`);
   resultado();
 }
 
+// ---- Mundo3D (bonecos de peças num mundo 3D): a forma, por código ----
+if (peca.molde === "Mundo3D") {
+  type Cena3D = { fala?: string; quem?: string; plano?: string; foco?: string; estados?: Record<string, unknown>; narracao?: { duracaoSeg?: number }; queda?: string };
+  const m = peca as unknown as {
+    titulo?: string;
+    personagens?: Array<{ id: string; visual?: unknown }>;
+    multidao?: unknown;
+    cenas?: Cena3D[];
+    ctaFinal?: string;
+    botaoFinal?: string;
+    cenario?: { ponte?: boolean; ambiente?: string };
+    post?: { titulo?: string; legenda?: string };
+  };
+  const cenas = m.cenas ?? [];
+  const ids = new Set((m.personagens ?? []).map((p) => p.id));
+  const PLANOS = ["aberto", "medio", "close", "de-baixo", "por-cima"];
+  const AMBIENTES = ["campo", "deserto", "cidade", "aldeia", "moderno"];
+  const ambiente = m.cenario?.ambiente ?? "campo";
+  const temPonte = m.cenario?.ponte ?? ambiente === "campo";
+  if (!AMBIENTES.includes(ambiente)) erro("roteirista", `cenario.ambiente "${ambiente}" não existe (use ${AMBIENTES.join(", ")})`);
+  const semCores = (peca as { bonecos?: string }).bonecos === "pecas" ? (m.personagens ?? []).filter((p) => !p.visual).map((p) => p.id) : [];
+  if (semCores.length) aviso("roteirista", `sem as cores do elenco: ${semCores.join(", ")} (rode npm run elenco -- <arquivo> --canal canais/<canal>; fora do elenco, tudo bem)`);
+  if (cenas.length < 3) erro("roteirista", `só ${cenas.length} cena(s): um vídeo pede de 5 a 12`);
+  if (cenas.length > 14) erro("roteirista", `${cenas.length} cenas: no máximo 14 (o vídeo passa de 1 minuto)`);
+  if (tamanho(m.titulo) > 60) erro("roteirista", `título com ${tamanho(m.titulo)} letras (até 60, cabe em 4 linhas)`);
+  cenas.forEach((cena, i) => {
+    const n = i + 1;
+    if (!cena.fala?.trim()) erro("roteirista", `cena ${n} sem fala`);
+    else if (palavras(cena.fala) > 28) erro("roteirista", `cena ${n} com ${palavras(cena.fala)} palavras (até 28: divida em duas cenas)`);
+    if (!PLANOS.includes(cena.plano ?? "")) erro("roteirista", `cena ${n}: plano "${cena.plano}" (use ${PLANOS.join(", ")})`);
+    const foco = cena.foco ?? "";
+    if (!(ids.has(foco) || (foco === "multidao" && m.multidao) || (foco === "ponte" && temPonte)))
+      erro("roteirista", `cena ${n}: foco "${foco}" não existe (um id de personagens, "multidao" ou "ponte")`);
+    if (cena.quem && !ids.has(cena.quem)) erro("roteirista", `cena ${n}: quem "${cena.quem}" não está em personagens`);
+    for (const id of Object.keys(cena.estados ?? {})) if (!ids.has(id)) erro("roteirista", `cena ${n}: estado de "${id}", que não está em personagens`);
+    if (cena.queda && !temPonte) erro("roteirista", `cena ${n}: queda sem ponte no cenário`);
+    if (process.argv.includes("--com-voz") && !cena.narracao) erro("producao", `cena ${n} sem voz: rode o narrar de novo`);
+  });
+  // Os planos variam (o que prende é a câmera mudando)
+  const repetidos = cenas.filter((c, i) => i > 0 && c.plano === cenas[i - 1].plano).length;
+  if (cenas.length >= 4 && repetidos > cenas.length / 2) aviso("roteirista", "muitos planos iguais seguidos: varie (aberto, médio, de baixo, close)");
+  const segundos = cenas.reduce((soma, c) => soma + (c.narracao?.duracaoSeg ?? palavras(c.fala) / 2.6), 0);
+  if (segundos > 75) erro("roteirista", `uns ${Math.round(segundos)} s de fala: o Short vai até uns 60 s`);
+  if (!m.ctaFinal) aviso("roteirista", "sem ctaFinal: o vídeo termina sem o cartão da marca");
+  if (m.ctaFinal && (/@/.test(m.ctaFinal) || /link na bio/i.test(m.ctaFinal))) erro("roteirista", "ctaFinal sem @ e sem link na bio (isso vai no botão)");
+  if (!m.post?.titulo || !m.post?.legenda) erro("roteirista", 'falta "post": { "titulo", "legenda" }');
+  console.log(`Mundo3D: ${cenas.length} cenas, uns ${Math.round(segundos)} s de fala.`);
+  resultado();
+}
+
 if (peca.molde !== "Conversa") {
-  console.log(`Molde ${peca.molde ?? "?"}: esta conferência é para os moldes Conversa e Documentario.`);
+  console.log(`Molde ${peca.molde ?? "?"}: esta conferência é para os moldes Conversa, Documentario e Mundo3D.`);
   process.exit(0);
 }
 
 // ---- Roteiro ----
 const cenas = peca.cenas ?? [];
+// Cenário que não é do kit nem está desenhado no roteiro (sai no ateliê, errado)
+const semDesenho = cenariosFaltando(peca as Parameters<typeof cenariosFaltando>[0]);
+if (semDesenho.length)
+  erro("designer-de-personagens", `cenário sem desenho: ${semDesenho.join(", ")} (desenhe com npm run cenario ... --gravar e rode npm run cenarios -- ${arquivo} --canal canais/<canal>)`);
 if (!peca.titulo) erro("roteirista", "falta o título");
 else if (tamanho(peca.titulo) > 50) erro("roteirista", `título com ${tamanho(peca.titulo)} caracteres (até 50)`);
-if (cenas.length < 4 || cenas.length > 7) erro("roteirista", `${cenas.length} cenas (de 4 a 7)`);
+// De 4 a 7 cenas (uns 30 s); até 12 quando o canal pede vídeo mais longo (ex.: 45 a 60 s)
+if (cenas.length < 4 || cenas.length > 12) erro("roteirista", `${cenas.length} cenas (de 4 a 7; até 12 se o canal pedir vídeo mais longo)`);
+else if (cenas.length > 7) aviso("roteirista", `${cenas.length} cenas: só se o canal pedir vídeo mais longo (ex.: 45 a 60 s)`);
 cenas.forEach((cena, i) => {
   const n = palavras(cena.fala);
   if (n > 12) erro("roteirista", `cena ${i + 1}: fala com ${n} palavras (até 12)`);
@@ -144,7 +215,7 @@ cenas.forEach((cena, i) => {
 // ---- CTAs: curtos, frase inteira, nunca @ ----
 const temContato = (texto = "") => /@\w|https?:|www\.|\.com\b|\.app\b|link na bio/i.test(texto);
 if (!peca.ctaInicial) erro("roteirista", "falta o ctaInicial");
-else if (tamanho(peca.ctaInicial) > 28) erro("roteirista", `ctaInicial com ${tamanho(peca.ctaInicial)} caracteres (até 28, cabe numa linha do balão)`);
+else if (tamanho(peca.ctaInicial) > 36) erro("roteirista", `ctaInicial com ${tamanho(peca.ctaInicial)} caracteres (até 36; acima de 28 o balão diminui a letra para caber numa linha)`);
 if (!peca.ctaFinal) erro("roteirista", "falta o ctaFinal");
 else {
   if (tamanho(peca.ctaFinal) > 60) erro("roteirista", `ctaFinal com ${tamanho(peca.ctaFinal)} caracteres (até 60)`);
@@ -178,6 +249,27 @@ for (const cena of cenas) {
   for (const id of Object.keys(cena.meio ?? {})) {
     if (!ids.includes(id)) erro("diretora-de-arte", `"${id}" em meio, mas não está no elenco (${ids.join(", ")})`);
   }
+}
+
+// ---- Objetos e corpo: o celular, a luz do aviso e o sentado ----
+// Defeitos que a crítica deixava passar: luz acesa sem ninguém com o celular e
+// pessoa sentada sem a cama ou o sofá na frente (as pernas sumiam; o molde
+// agora põe de pé, mas o roteiro tem que pedir certo)
+{
+  const cenariosComFrente = new Set(["quarto", "sala", ...(((peca as Record<string, unknown>).cenariosProprios as Array<{ id: string; frente?: string }> | undefined) ?? []).filter((c) => c.frente).map((c) => c.id)]);
+  let cenario = (peca as Record<string, unknown>).cenario as string | undefined;
+  const daEsquerda = ids.length === 2 ? ids[0] : null;
+  cenas.forEach((cena, i) => {
+    cenario = (cena.cenario as string | undefined) ?? cenario;
+    const poses = [...Object.entries(cena.estados ?? {}), ...ids.filter((id) => cena[id]).map((id) => [id, cena[id] as Estado] as const)];
+    if (cena.luz && !poses.some(([, e]) => e?.pose === "celular" || e?.pose === "sentado"))
+      erro("diretora-de-arte", `cena ${i + 1}: tem "luz" mas ninguém está com o celular (pose celular ou sentado); a luz acenderia numa mão vazia`);
+    for (const [id, e] of [...poses, ...Object.entries(cena.meio ?? {})]) {
+      if (e?.pose !== "sentado") continue;
+      if (!cenariosComFrente.has(cenario ?? "") || id !== daEsquerda)
+        aviso("diretora-de-arte", `cena ${i + 1}: "${id}" sentado sem a cama ou o sofá na frente dele (só no quarto, na sala ou num cenário com frente, e só o da esquerda numa conversa de dois): o vídeo vai mostrar de pé com o celular`);
+    }
+  });
 }
 
 // ---- Narração: ou todas as falas, ou nenhuma ----

@@ -4,11 +4,22 @@ Valem para todos os canais. O que é de cada canal (produto, tom, personagens, C
 
 O roteiro é um `conteudo/<data>-<assunto>.json` no molde **Conversa**. O formato está em `conteudo/exemplo-conversa.json` e os campos válidos no `conversaSchema` de `src/moldes/Conversa.tsx`.
 
+## Idioma
+
+O `canal-postai.md` diz o **idioma dos vídeos** (português, inglês ou espanhol) e o `npm run canal` grava em `.postai-idioma`. Escreva **tudo** nesse idioma: as falas, o título, a capa, os capítulos, o texto na tela, o cartão do fim e o post (título, legenda e hashtags). Ponha `"idioma": "pt" | "en" | "es"` no roteiro. A voz, a legenda e o botão do fim saem nele sozinhos (o `npm run narrar` usa o idioma). Em inglês e em espanhol, escreva os números como se fala na língua (a voz lê os algarismos) e nada de português no vídeo. Todas as vozes do catálogo falam as três línguas: nunca pare o vídeo por causa do idioma ou da voz.
+
+## Quem conta a história (escolha do dono; vale para todos os estilos, 2D e 3D)
+
+O `canal-postai.md` diz **QUEM CONTA** a história:
+- **NARRADOR:** um narrador que não aparece conta a história, e os personagens **fazem a cena** enquanto ele fala. As falas do narrador vão **sem `quem`**; ponha `"voz"` no topo do roteiro com a voz do narrador que o canal diz. Em toda cena, os `estados` mostram o que o narrador está contando (ele diz "ela chorou": expressão triste e a pose de quem chora; "ele correu": no 3D, `ate` para ele andar; "ele olhou o céu": pose pensando ou explicando apontando). Personagem só fala (com `quem`) numa frase curta no momento forte, no máximo 2 vezes no vídeo (ex.: "Onde estás?"). No 2D, os personagens ficam com a boca fechada enquanto o narrador fala: as reações (pose e expressão) contam a história.
+- **PERSONAGENS:** os próprios personagens contam e conversam: toda fala tem `quem`. No 3D, o narrador só abre ou fecha, no máximo em 1 cena.
+Sem a linha QUEM CONTA, siga o jeito do estilo: o Conversa (2D) com personagens, o Mundo 3D com narrador.
+
 ## Roteiro
 
 - **Título:** até 50 caracteres, para caber em 2 linhas. Na série, use `"parte": "PARTE N"`; fora da série, não use `parte`.
 - **Cenário** (`"cenario"`): `atelie`, `escritorio` ou `cafe`. Combine com a história e não repita o mesmo cenário 3 vezes seguidas.
-- **Falas:** de 4 a 7 cenas, cada uma com **até 12 palavras**, e de 12 a 25 segundos de fala no total.
+- **Falas:** de 4 a 7 cenas, cada uma com **até 12 palavras**, e de 12 a 25 segundos de fala no total. Quando o canal pede vídeo mais longo (ex.: "45 a 60 s" no `canal-postai.md`), até **12 cenas** e o tempo que o canal pede (até uns 55 s de fala), sempre com falas de até 12 palavras.
 - **Gancho:** a primeira fala prende em 2 segundos. Nada de "Oi, gente".
 - **Final:** a última fala é a virada, a piada ou o gancho, e leva ao CTA final. Nunca termine com "segue a gente".
 
@@ -16,16 +27,16 @@ O roteiro é um `conteudo/<data>-<assunto>.json` no molde **Conversa**. O format
 
 - **Poses:** `normal`, `cintura`, `celular`, `cabeca`, `explicando`, `comemorando`, `pensando`.
 - **Expressões:** `neutra`, `feliz`, `radiante`, `preocupada`, `surpresa`, `brava`, `sem-graca`.
-- Em toda cena, os dois personagens têm pose e expressão em `estados`, e cada um muda pelo menos uma das duas de uma cena para a outra. Quem escuta também reage.
+- Em toda cena, cada personagem tem pose e expressão em `estados`, e cada um muda pelo menos uma das duas de uma cena para a outra. Com dois, quem escuta também reage. O vídeo pode ter **um personagem sozinho** (ele fica no meio da tela, falando com quem assiste) quando o dono pedir ou a história for de uma pessoa só.
 - Fala com mais de 3 segundos (umas 9 palavras ou mais): ponha também `meio` (mesmo formato de `estados`), com a pose ou a expressão que muda na metade da fala, para ninguém ficar parado. Ex.: quem fala passa de `explicando` para `celular` quando mostra o app; quem ouve passa de `surpresa` para `feliz`.
-- **Cartão:** use quando alguém mostra algo do produto, com no máximo 3 itens e nomes comuns inventados.
+- **Cartão:** use quando alguém mostra algo do produto, com no máximo 3 itens e nomes comuns inventados. O sinal dos itens bate com a história: `"marca": "confirmado"` (✓ verde; com `numero`, cada ✓ aparece junto com o contador; `marcados` diz quantos já confirmaram e os outros ficam ⏳), `"pendente"` (⏳ amarelo, ex.: "Ainda sem resposta") ou `"nenhuma"`. O `rotulo` comprido (mais de 12 letras) vai embaixo do número.
 - **Zoom:** opcional, em quem revela a solução.
 - **Sons:** no máximo 2 por vídeo (`notificacao` quando o celular aparece, `sucesso` na virada, `alerta` no pânico).
 
 ## Fechamento
 
 - **Pronúncia:** inclua `"pronuncia"` para o nome do produto, se ele puder ser lido errado.
-- **CTAs:** `ctaInicial` (até 28 caracteres, uma linha), `ctaFinal` (até 60, frase completa, sem @ nem "link na bio") e `botaoFinal` (até 24, ex.: "Link na bio 👆"), feitos para o episódio. O @ nunca aparece no vídeo.
+- **CTAs:** `ctaInicial` (até 28 caracteres com a letra cheia; até 36, e a letra diminui; sempre uma linha; se o dono escreveu a chamada, use a dele), `ctaFinal` (até 60, frase completa, sem @ nem "link na bio") e `botaoFinal` (até 24, ex.: "Link na bio 👆"), feitos para o episódio. O @ nunca aparece no vídeo.
 - **Capa:** `"capa"` com o `titulo` (até 6 palavras), o `destaque` e a pose e a expressão mais fortes de cada personagem, pelo id. Sem foto.
 - **Post:**
   - **título:** até 60 caracteres, com o mais forte nas **primeiras palavras** (o Shorts e o Reels mostram só o começo) e no máximo 1 emoji. Ex.: "Só Deus poderia curá-la. E Ele estava ali", e não "Somente Deus poderia curá-la. E aqui está o Senhor: a emoção de Nicodemos";

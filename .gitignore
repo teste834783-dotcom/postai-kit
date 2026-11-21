@@ -29,6 +29,8 @@ public/avatar
 
 # Canal animado baixado do Postaí a cada episódio (npm run canal)
 public/marca/logo-canal.png
+public/marca/vinheta.*
+public/marca/fim.json
 canais/*/canal-postai.md
 canais/*/materiais/
 canais/*/canal-montado.json
@@ -40,3 +42,8 @@ canais/*/registro.json
 
 # De qual canal é a rotina (a do Canal dark grava "dark")
 .postai-canal
+.postai-idioma
+canais/*/cenarios.json
+canais/*/cenarios-novos/
+canais/*/ficha-cenario-*.png
+public/videos-do-app/

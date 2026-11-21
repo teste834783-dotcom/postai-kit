@@ -12,16 +12,21 @@
 //   --deitadas (só fotos deitadas, gravadas com 1920 px de largura: para o Documentario),
 //   --fonte commons (Wikimedia Commons: pinturas, mapas e fotos antigas; só domínio público e CC0;
 //   melhor para história e com termos gerais, ex. "Rio de Janeiro 19th century painting"),
-//   --fonte museus (ao mesmo tempo no Art Institute of Chicago, no Cleveland Museum of Art, no
+//   --fonte museus (ao mesmo tempo no Art Institute of Chicago, no Cleveland Museum of Art, no The Met, no
 //   Commons e no Openverse, só domínio público e CC0, sem chave; os museus vêm primeiro: as
 //   imagens são escaneadas por eles, em alta resolução; o melhor para o Canal dark; na rotina
 //   da nuvem entra também o Pixabay, com fotos modernas de lugares e paisagens),
+//   Com o passe do Postaí, procura antes no BANCO DE IMAGENS do Postaí e guarda nele a imagem livre escolhida
+//   (--nicho "<tema>" organiza; sem ele, o do canal-postai.md; --sem-banco desliga).
+//   --fonte unsplash (fotos modernas do Unsplash, uso comercial; passa pelo Postaí; avisa o Unsplash no download
+//   final e o CRÉDITO vai obrigatório na legenda do post, anotado no CREDITOS.md),
 //   --fonte pixabay (fotos e ilustrações modernas do Pixabay, uso comercial sem crédito; passa pelo
 //   Postaí, que tem a chave: precisa do passe da rotina ou da POSTAI_CHAVE)
 // As opções de cada item ficam em _candidatos/<item>.json: a escolha (#n) pega exatamente a que
 // foi vista, sem buscar de novo. Limite do Openverse sem chave: 20 buscas por minuto, 200 por dia.
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ferramenta } from "./postai.ts";
@@ -38,11 +43,28 @@ type Foto = {
   height: number;
   /** O nome da obra, quando o acervo dá (ajuda a saber quem é) */
   titulo?: string;
+  /** Crédito obrigatório na legenda do post (Unsplash: "Foto de <autor> no Unsplash") */
+  credito?: string;
+  /** A licença, quando o acervo diz (Openverse: cc0 ou pdm; banco: a guardada) */
+  licenca?: string;
   /** Cabeçalhos que o acervo exige para baixar */
   cabecalhos?: Record<string, string>;
 };
 
 const args = process.argv.slice(2);
+// --help: o uso (antes dava "Item inválido: --help")
+if (args.includes("--help") || args.includes("-h")) {
+  const fonte = readFileSync(new URL(import.meta.url), "utf8");
+  console.log(
+    fonte
+      .split("\n")
+      .filter((linha) => linha.startsWith("//"))
+      .slice(0, 30)
+      .map((linha) => linha.replace(/^\/\/ ?/, ""))
+      .join("\n"),
+  );
+  process.exit(0);
+}
 const opcao = (nome: string) => {
   const i = args.indexOf(`--${nome}`);
   if (i < 0) return undefined;
@@ -60,6 +82,9 @@ const pasta = opcao("pasta") ?? "fotos";
 const fonte = opcao("fonte");
 const candidatos = flag("candidatos");
 const deitadas = flag("deitadas");
+// Estas opções saem de args antes de os itens serem lidos (senão "--sem-banco" vira "item inválido")
+const semBanco = flag("sem-banco");
+const nichoPedido = opcao("nicho");
 if (args.length === 0) {
   console.error('Uso: npm run buscar-fotos -- [--candidatos] arquivo="termo em inglês"[#n] ...');
   process.exit(1);
@@ -112,9 +137,19 @@ function marcarCansado(url: string | URL) {
  * fetch que tenta de novo quando o site pede calma (429) ou cai (5xx). Depois
  * de 2 bloqueios seguidos, desiste do site por 10 minutos (ver CANSADOS).
  */
+// O Wikimedia pede um pedido de cada vez, sem rajada: pelo menos 1 s entre eles
+let ultimoNoWikimedia = 0;
+async function calmaNoWikimedia(url: string | URL) {
+  if (grupo(url) !== "wikimedia") return;
+  const falta = ultimoNoWikimedia + 1000 - Date.now();
+  if (falta > 0) await espera(falta);
+  ultimoNoWikimedia = Date.now();
+}
+
 async function pedir(url: string | URL, cabecalhos: Record<string, string> = { "User-Agent": AGENTE }, tentativas = 3): Promise<Response> {
   if (cansado(url)) return new Response(null, { status: 429 });
   for (let vez = 1; ; vez++) {
+    await calmaNoWikimedia(url);
     const resp = await fetch(url, { headers: cabecalhos });
     if (resp.status !== 429 && resp.status < 500) return resp;
     if (resp.status === 429 && vez >= 2) {
@@ -267,6 +302,64 @@ async function buscarNoCleveland(termo: string): Promise<Foto[]> {
     .filter(filtroDeTamanho);
 }
 
+/** Largura e altura de um JPEG pelos primeiros bytes (o marcador SOF), sem baixar a imagem toda */
+function dimensoesDoJpeg(b: Uint8Array): { width: number; height: number } | null {
+  let i = 2;
+  while (i + 9 < b.length) {
+    if (b[i] !== 0xff) return null;
+    const marca = b[i + 1];
+    const tamanho = (b[i + 2] << 8) + b[i + 3];
+    // SOF0 a SOF15, menos os que não são quadro (C4, C8, CC)
+    if (marca >= 0xc0 && marca <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marca)) {
+      return { height: (b[i + 5] << 8) + b[i + 6], width: (b[i + 7] << 8) + b[i + 8] };
+    }
+    i += 2 + tamanho;
+  }
+  return null;
+}
+
+/**
+ * The Met (Nova York): obras em domínio público (CC0), sem chave. A busca é a
+ * v1.1 (a v1 saiu do ar em 01/10/2026); cada obra diz se é domínio público. A
+ * API não dá o tamanho da imagem: lê do começo do próprio JPEG.
+ */
+async function buscarNoMet(termo: string): Promise<Foto[]> {
+  const url = new URL("https://collectionapi.metmuseum.org/public/collection/v1.1/search");
+  url.searchParams.set("q", termo);
+  url.searchParams.set("hasImages", "true");
+  url.searchParams.set("limit", "20");
+  const resp = await pedir(url);
+  if (!resp.ok) throw new Error(`O Met respondeu ${resp.status} para "${termo}"`);
+  const { objectIDs } = (await resp.json()) as { objectIDs?: number[] | null };
+  type Obra = { objectID: number; isPublicDomain?: boolean; primaryImage?: string; primaryImageSmall?: string; title?: string; artistDisplayName?: string; objectURL?: string };
+  const obras = await Promise.all(
+    (objectIDs ?? []).slice(0, 12).map(async (id) => {
+      const r = await pedir(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`);
+      return r.ok ? ((await r.json()) as Obra) : null;
+    }),
+  );
+  const boas = obras.filter((o): o is Obra => Boolean(o?.isPublicDomain && o.primaryImage && tituloCombina(termo, o.title ?? "")));
+  const fotos = await Promise.all(
+    boas.map(async (o): Promise<Foto | null> => {
+      const comeco = await pedir(o.primaryImage as string, { "User-Agent": AGENTE, Range: "bytes=0-65535" });
+      if (!comeco.ok) return null;
+      const dim = dimensoesDoJpeg(new Uint8Array(await comeco.arrayBuffer()));
+      if (!dim) return null;
+      return {
+        id: String(o.objectID),
+        url: o.primaryImage as string,
+        previa: o.primaryImageSmall || undefined,
+        source: "met",
+        foreign_landing_url: o.objectURL ?? `https://www.metmuseum.org/art/collection/search/${o.objectID}`,
+        width: dim.width,
+        height: dim.height,
+        titulo: [o.title, o.artistDisplayName].filter(Boolean).join(", "),
+      };
+    }),
+  );
+  return fotos.filter((f): f is Foto => f !== null).filter(filtroDeTamanho);
+}
+
 /** As tags que o Pixabay põe em imagem feita por IA */
 const FEITO_POR_IA = /\b(ai[- ]?generated|generative|midjourney|stable diffusion|dall[- ]?e|ai art)\b/i;
 
@@ -289,6 +382,25 @@ async function buscarNoPixabay(termo: string): Promise<Foto[]> {
     .filter(filtroDeTamanho);
 }
 
+/**
+ * Unsplash: fotos modernas (grátis, uso comercial), pela chave do Postaí. Exige
+ * avisar o Unsplash quando a foto é escolhida (feito no download final) e o
+ * crédito na legenda do post. Nunca vai para o banco geral de imagens.
+ */
+async function buscarNoUnsplash(termo: string): Promise<Foto[]> {
+  if (!process.env.POSTAI_CHAVE) throw new Error("sem o passe do Postaí (o Unsplash passa pelo Postaí)");
+  const texto = await ferramenta("buscar_no_unsplash", { q: termo, orientacao: deitadas ? "horizontal" : "all", porPagina: 20 });
+  let resultados: Array<{ id: string; pagina: string; largura: number; altura: number; previa: string; url: string; descricao: string; credito: string }>;
+  try {
+    resultados = (JSON.parse(texto) as { resultados: typeof resultados }).resultados;
+  } catch {
+    throw new Error(texto.slice(0, 160));
+  }
+  return resultados
+    .map((r) => ({ id: r.id, url: r.url, previa: r.previa, source: "unsplash", foreign_landing_url: r.pagina, width: r.largura, height: r.altura, titulo: r.descricao, credito: r.credito }))
+    .filter(filtroDeTamanho);
+}
+
 // Quanto cada acervo vale na ordem: os museus escaneiam as próprias obras (alta
 // resolução, licença certa); o resto do Openverse (Flickr etc.) é mais variado.
 const PESO: Record<string, number> = {
@@ -300,6 +412,7 @@ const PESO: Record<string, number> = {
   nga: 3,
   wikimedia: 2,
   pixabay: 1.5,
+  unsplash: 1.5,
 };
 const pesoDe = (f: Foto) => PESO[f.source] ?? (f.source.startsWith("smithsonian") ? 3 : 1);
 
@@ -309,14 +422,16 @@ const pesoDe = (f: Foto) => PESO[f.source] ?? (f.source.startsWith("smithsonian"
  * confiável para o menos, e mantém a ordem de relevância de cada um.
  */
 async function buscarNosMuseus(termo: string): Promise<Foto[]> {
-  const nomes = ["Art Institute", "Cleveland", "Commons", "Openverse", "Pixabay"];
+  const nomes = ["Art Institute", "Cleveland", "Met", "Commons", "Openverse", "Pixabay", "Unsplash"];
   const resultados = await Promise.allSettled([
     buscarNoAIC(termo),
     buscarNoCleveland(termo),
+    buscarNoMet(termo),
     buscarNoCommons(termo),
     buscarNoOpenverse(termo, false),
     // Sem o passe (no computador, sem a rotina), o Pixabay fica de fora sem avisar
     process.env.POSTAI_CHAVE ? buscarNoPixabay(termo) : Promise.resolve([]),
+    process.env.POSTAI_CHAVE ? buscarNoUnsplash(termo) : Promise.resolve([]),
   ]);
   const listas: Foto[][] = [];
   for (const [i, r] of resultados.entries()) {
@@ -362,23 +477,150 @@ async function buscarNoOpenverse(termo: string, soFotos = true): Promise<Foto[]>
   url.searchParams.set("license", deitadas || !soFotos ? "cc0,pdm" : "cc0");
   if (soFotos) url.searchParams.set("category", "photograph");
   url.searchParams.set("page_size", "20");
-  if (fonte && fonte !== "museus") url.searchParams.set("source", fonte);
-  const resp = await pedir(url);
+  // Nos museus (e na reserva quando a fonte pedida falha) o Openverse busca em todas as fontes dele
+  if (soFotos && fonte && !["museus", "commons", "pixabay", "unsplash"].includes(fonte)) url.searchParams.set("source", fonte);
+  let resp = await pedir(url);
+  // 400 com --fonte: o Openverse não conhece essa fonte (ex.: "wikimedia" escrito
+  // diferente). Tenta sem filtrar a fonte em vez de perder o item.
+  if (resp.status === 400 && url.searchParams.has("source")) {
+    console.log(`  (o Openverse não aceitou a fonte "${fonte}": procuro em todas as fontes dele)`);
+    url.searchParams.delete("source");
+    resp = await pedir(url);
+  }
   if (!resp.ok) throw new Error(`Openverse respondeu ${resp.status} para "${termo}"`);
   const { results } = (await resp.json()) as { results: Array<Foto & { title?: string }> };
   // Grandes o bastante e não muito compridas
   // O rawpixel diz ter 5000 px, mas entrega um WebP de 1024 px: fica de fora
   return results
     .filter((r) => r.source !== "rawpixel")
-    .map((r) => ({ id: r.id, url: r.url, previa: `https://api.openverse.org/v1/images/${r.id}/thumb/`, source: r.source, foreign_landing_url: r.foreign_landing_url, width: r.width, height: r.height, titulo: r.title }))
+    .map((r) => ({ id: r.id, url: r.url, previa: `https://api.openverse.org/v1/images/${r.id}/thumb/`, source: r.source, foreign_landing_url: r.foreign_landing_url, width: r.width, height: r.height, titulo: r.title, licenca: (r as { license?: string }).license }))
+    .filter(filtroDeTamanho);
+}
+
+// ---- Banco de imagens do Postaí (geral, só imagens livres) ----
+// Antes da internet, procura no banco: o que outra equipe já escolheu (mesma
+// pintura, mesmo mapa) vem de lá, sem pedir de novo ao Commons. A imagem nova
+// que a equipe escolher (menos as do Unsplash) é guardada para as próximas.
+const usarBanco = Boolean(process.env.POSTAI_CHAVE) && !semBanco;
+const nicho = nichoPedido ?? nichoDoCanal();
+
+/** O nicho do canal (o tema ou o que divulga), do canal-postai.md, para o banco organizar */
+function nichoDoCanal(): string {
+  try {
+    if (!existsSync("canais")) return "";
+    for (const pasta of readdirSync("canais", { withFileTypes: true }).filter((d) => d.isDirectory())) {
+      const md = join("canais", pasta.name, "canal-postai.md");
+      if (!existsSync(md)) continue;
+      const achado = readFileSync(md, "utf8").match(/## (?:Tema do canal|O que divulga)\s*\n+([^\n]+)/);
+      if (achado) return achado[1].trim().slice(0, 60);
+    }
+  } catch {
+    // Sem o canal, o banco guarda sem nicho
+  }
+  return "";
+}
+
+async function buscarNoBanco(termo: string): Promise<Foto[]> {
+  const texto = await ferramenta("buscar_no_banco_de_imagens", { q: termo, nicho, orientacao: deitadas ? "horizontal" : "all", limite: 6 });
+  let resultados: Array<{ id: string; largura: number; altura: number; titulo: string; fonte: string; licenca: string; original: string; usadaPorEstaContaHaDias: number | null; previa: string; url: string }>;
+  try {
+    resultados = (JSON.parse(texto) as { resultados: typeof resultados }).resultados;
+  } catch {
+    throw new Error(texto.slice(0, 160));
+  }
+  return resultados
+    .map((r) => ({
+      id: r.id,
+      url: r.url,
+      previa: r.previa,
+      source: "banco",
+      foreign_landing_url: r.original || `banco:${r.id}`,
+      width: r.largura,
+      height: r.altura,
+      titulo: `${r.titulo || "sem título"} (banco, de ${r.fonte}${r.usadaPorEstaContaHaDias !== null ? `; esta conta usou há ${r.usadaPorEstaContaHaDias} dias` : ""})`,
+      licenca: r.licenca,
+    }))
     .filter(filtroDeTamanho);
 }
 
 async function buscar(termo: string): Promise<Foto[]> {
+  const doBanco = usarBanco
+    ? await buscarNoBanco(termo).catch((erro) => {
+        console.log(`  (banco de imagens não respondeu: ${erro instanceof Error ? erro.message : String(erro)})`);
+        return [] as Foto[];
+      })
+    : [];
+  // Com 4 ou mais boas no banco, nem vai à internet (mais rápido e sem o limite do Commons)
+  if (doBanco.length >= 4) return doBanco;
+  // A internet falhou de vez: o que o banco tinha ainda serve
+  const daInternet = await buscarNaInternet(termo).catch((erro) => {
+    if (!doBanco.length) throw erro;
+    console.log(`  (${erro instanceof Error ? erro.message : String(erro)}: fico com as do banco)`);
+    return [] as Foto[];
+  });
+  return [...doBanco, ...daInternet.filter((f) => !doBanco.some((b) => b.foreign_landing_url === f.foreign_landing_url))];
+}
+
+const licencaDa = (foto: Foto) =>
+  foto.source === "pixabay"
+    ? "pixabay"
+    : foto.source === "clevelandart" || foto.source === "met" || foto.licenca === "cc0"
+      ? "cc0"
+      : "dominio-publico";
+
+/** Guarda no banco a imagem escolhida (a grande e a miniatura de 480 px), com a licença e de onde veio */
+async function guardarNoBanco(arquivo: string, foto: Foto, termo: string) {
+  const bytes = readFileSync(arquivo);
+  const hash = createHash("sha256").update(bytes).digest("hex");
+  const pedido = JSON.parse(await ferramenta("pedir_envio_ao_banco", { hash })) as { jaExiste: boolean; imagem?: string; miniatura?: string };
+  if (!pedido.jaExiste && pedido.imagem && pedido.miniatura) {
+    const mini = join(tmpdir(), `banco-${hash.slice(0, 12)}.jpg`);
+    spawnSync("npx", ["remotion", "ffmpeg", "-y", "-loglevel", "error", "-i", arquivo, "-vf", "scale='min(480,iw)':-2", "-q:v", "4", mini], { shell: process.platform === "win32" });
+    for (const [url, corpo] of [[pedido.imagem, bytes], [pedido.miniatura, readFileSync(mini)]] as const) {
+      const r = await fetch(url, { method: "PUT", headers: { "Content-Type": "image/jpeg" }, body: corpo });
+      if (!r.ok) throw new Error(`o envio ao banco respondeu ${r.status}`);
+    }
+    rmSync(mini, { force: true });
+  }
+  const dim = dimensoesDoJpeg(bytes) ?? { width: foto.width, height: foto.height };
+  const etiquetas = [...new Set(termo.toLowerCase().split(/[^a-z0-9]+/).filter((p) => p.length > 2))].slice(0, 12);
+  await ferramenta("guardar_no_banco", {
+    hash,
+    largura: dim.width,
+    altura: dim.height,
+    fonte: foto.source.toLowerCase().replace(/[^a-z0-9_.-]/g, "").slice(0, 40) || "outra",
+    licenca: licencaDa(foto),
+    original: foto.foreign_landing_url,
+    titulo: foto.titulo ?? "",
+    etiquetas,
+    nicho,
+  });
+}
+
+async function buscarNaFonte(termo: string): Promise<Foto[]> {
   if (fonte === "commons") return buscarNoCommons(termo);
   if (fonte === "museus") return buscarNosMuseus(termo);
   if (fonte === "pixabay") return buscarNoPixabay(termo);
+  if (fonte === "unsplash") return buscarNoUnsplash(termo);
   return buscarNoOpenverse(termo);
+}
+
+/**
+ * A fonte pedida e, se ela bloquear a máquina (o Commons dá 429 na nuvem), cair
+ * ou não achar nada, todos os acervos juntos (os museus, o Commons, o Openverse,
+ * o Pixabay e o Unsplash). Antes o item só falhava e o vídeo saía com menos fotos.
+ */
+async function buscarNaInternet(termo: string): Promise<Foto[]> {
+  if (fonte === "museus") return buscarNosMuseus(termo);
+  const nome = fonte ?? "Openverse";
+  try {
+    const fotos = await buscarNaFonte(termo);
+    if (fotos.length) return fotos;
+    console.log(`  (nada em ${nome} para "${termo}": procuro em todos os acervos)`);
+  } catch (erro) {
+    console.log(`  (${erro instanceof Error ? erro.message : String(erro)}: procuro em todos os acervos)`);
+  }
+  return buscarNosMuseus(termo);
 }
 
 /** Baixa e grava em JPEG, com o lado menor em 1080 px (candidata: 480 px de largura, só para olhar) */
@@ -430,7 +672,9 @@ for (const [n, item] of itens.entries()) {
     }
     fotos ??= await buscar(item.termo);
     if (fotos.length === 0) {
-      console.error(`✗ ${item.arquivo}: nada em CC0 para "${item.termo}" (tente outro termo em inglês)`);
+      console.error(
+        `✗ ${item.arquivo}: nenhuma imagem livre para "${item.termo}" em nenhum acervo (tente um termo mais geral em inglês: o lugar, o objeto ou a época, sem nome próprio raro)`,
+      );
       process.exitCode = 1;
       continue;
     }
@@ -454,11 +698,26 @@ for (const [n, item] of itens.entries()) {
         const nome = foto.titulo || decodeURIComponent(foto.foreign_landing_url.split("/").pop() ?? "").replace(/^File:/, "");
         return `${i + 1}: ${nome.slice(0, 70)} (${foto.source}, ${foto.width}×${foto.height})`;
       });
-      console.log(`• ${item.arquivo}: ${opcoes.length} opções em ${pastaCandidatos}/${item.arquivo}-N.jpg (480 px)\n    ${nomes.join("\n    ")}`);
+      console.log(`• ${item.arquivo}: ${opcoes.length} ${opcoes.length === 1 ? "opção" : "opções"} em ${pastaCandidatos}/${item.arquivo}-N.jpg (480 px)\n    ${nomes.join("\n    ")}`);
     } else {
       const foto = fotos[item.escolha - 1];
-      if (!foto) throw new Error(`só há ${fotos.length} opções para "${item.termo}"`);
+      if (!foto)
+        throw new Error(
+          `a escolha #${item.escolha} não existe: "${item.termo}" tem ${fotos.length} ${fotos.length === 1 ? "opção (use #1)" : `opções (use #1 a #${fotos.length})`}`,
+        );
       await baixar(foto, join(destino, `${item.arquivo}.jpg`));
+      // Banco: conta o uso (e esta conta não repete a imagem em vídeos seguidos).
+      // Nova e livre: guarda no banco para as próximas equipes (o Unsplash nunca)
+      if (foto.source === "banco") await ferramenta("usar_do_banco", { id: foto.id }).catch(() => undefined);
+      else if (usarBanco && foto.source !== "unsplash")
+        await guardarNoBanco(join(destino, `${item.arquivo}.jpg`), foto, item.termo).catch((erro) =>
+          console.log(`  (não guardou no banco: ${erro instanceof Error ? erro.message : String(erro)})`),
+        );
+      // Unsplash: avisa que a foto foi usada (exigência deles) e lembra o crédito da legenda
+      if (foto.source === "unsplash") {
+        await ferramenta("usar_foto_do_unsplash", { id: foto.id }).catch(() => undefined);
+        console.log(`  CRÉDITO OBRIGATÓRIO na legenda do post: ${foto.credito}`);
+      }
       creditos.push({ arquivo: `${item.arquivo}.jpg`, foto });
       console.log(`✓ ${destino}/${item.arquivo}.jpg (${foto.source}, ${foto.foreign_landing_url})`);
     }
@@ -477,13 +736,13 @@ if (!candidatos && creditos.length > 0) {
         .split("\n")
         .filter((l) => /^\| \S+\.jpg \|/.test(l) && !creditos.some((c) => l.startsWith(`| ${c.arquivo} |`)))
     : [];
-  const novas = creditos.map(({ arquivo, foto }) => `| ${arquivo} | ${foto.source} | ${foto.foreign_landing_url} | ${foto.id} |`);
+  const novas = creditos.map(({ arquivo, foto }) => `| ${arquivo} | ${foto.source} | ${foto.foreign_landing_url} | ${foto.id} |${foto.credito ? ` ${foto.credito} |` : ""}`);
   writeFileSync(
     caminho,
     [
       `# Fotos de domínio público (${pasta})`,
       "",
-      "Licença CC0 ou domínio público (uso comercial sem crédito obrigatório), baixadas do Openverse, do Wikimedia Commons, do Art Institute of Chicago ou do Cleveland Museum of Art com o ferramentas/buscar-fotos.mts.",
+      "Licença CC0 ou domínio público (uso comercial sem crédito obrigatório), baixadas do Openverse, do Wikimedia Commons, do Art Institute of Chicago, do Cleveland Museum of Art ou do The Met com o ferramentas/buscar-fotos.mts. As do Unsplash (licença do Unsplash) têm crédito obrigatório na legenda do post: está na última coluna.",
       "",
       "| Arquivo | Fonte | Original | Id |",
       "| --- | --- | --- | --- |",

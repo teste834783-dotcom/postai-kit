@@ -5,7 +5,7 @@ description: Roteiro para um vídeo sob medida no Kit Estúdio, quando nenhum mo
 
 # Fazer um vídeo sob medida
 
-Tudo em pt-BR. Vídeo 1080×1920, 30 quadros por segundo, em Remotion. Para um post comum, use a skill
+O vídeo sai no idioma do canal (português, inglês ou espanhol; o canal-postai.md diz qual); as mensagens para o dono, em pt-BR. Vídeo 1080×1920, 30 quadros por segundo, em Remotion. Para um post comum, use a skill
 `criar-post`; esta é para o que os moldes não fazem.
 
 ## 1. Antes de tudo
@@ -38,7 +38,7 @@ Mostre o plano e **espere o dono aprovar**:
 | QR do site | chamada final | `midia/QrAnimado` |
 | Fotos CC0 | quando o dono não tem foto | `npm run buscar-fotos` (olhe as opções antes de escolher) |
 | Transições do Remotion | troca de cena com fade, slide, wipe | `@remotion/transitions` (já instalado) |
-| Narração e legenda animada | voz em português, legenda palavra por palavra | skill `narrar`; `texto/Legendas`, áudio de `npm run narrar` |
+| Narração e legenda animada | voz em português, inglês ou espanhol (o idioma do canal), legenda palavra por palavra | skill `narrar`; `texto/Legendas`, áudio de `npm run narrar` |
 | Mascote que fala | personagem na cor da marca, boca no tempo da voz | `personagens/Mascote` |
 | 3D | título com volume, foto em cartão girando, formas ao fundo | `3d/` (`Palco3D`, `Titulo3D`, `Cartao3D`, `Formas3D`); antes, `npm run diagnostico` |
 | Pessoa falando | o dono apresentando, com a boca no tempo da voz (placa NVIDIA) | skill `avatar`; `personagens/Apresentador` |

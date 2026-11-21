@@ -35,8 +35,18 @@ export function porExtenso(n: number, feminino = false): string {
   return feminino ? texto.replace(/\bum$/, "uma").replace(/\bdois$/, "duas") : texto;
 }
 
+// Os números em inglês e em espanhol: o Whisper devolve em algarismo ("three
+// hundred" volta "300"), e sem estas palavras cada número virava aviso de
+// pronúncia (em 21/11/2026 a agente leu dezenas desses avisos num roteiro de
+// carros em inglês e parou o vídeo achando que a voz não falava inglês).
+const NUMEROS_EM_INGLES = "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred hundreds thousand thousands million millions billion billions and percent dollar dollars cent cents first second third fourth fifth sixth seventh eighth ninth tenth".split(" ");
+const NUMEROS_EM_ESPANHOL = "cero uno una dos tres cuatro cinco seis siete ocho nueve diez once doce trece catorce quince dieciséis diecisiete dieciocho diecinueve veinte veintiuno veintidós veintitrés veinticuatro veinticinco veintiséis veintisiete veintiocho veintinueve treinta cuarenta cincuenta sesenta setenta ochenta noventa cien ciento doscientos trescientos cuatrocientos quinientos seiscientos setecientos ochocientos novecientos mil millón millones y dólares dólar centavos".split(" ");
+
 const PALAVRAS_DE_NUMERO = new Set(
-  [...UNIDADES, ...DEZENAS, ...CENTENAS, "cem", "mil", "e", "reais", "real", "centavos", "centavo", "uma", "duas", "hora", "horas", "por", "cento"]
+  [
+    ...UNIDADES, ...DEZENAS, ...CENTENAS, "cem", "mil", "e", "reais", "real", "centavos", "centavo", "uma", "duas", "hora", "horas", "por", "cento",
+    ...NUMEROS_EM_INGLES, ...NUMEROS_EM_ESPANHOL,
+  ]
     .filter(Boolean)
     .map((p) => normalizar(p)),
 );
@@ -44,12 +54,21 @@ const PALAVRAS_DE_NUMERO = new Set(
 const inteiro = (texto: string) => Number(texto.replace(/\./g, ""));
 
 /** Uma palavra do roteiro como a voz deve ler (pode virar várias) */
-function falarPalavra(palavra: string, pronuncia: Record<string, string>): string {
+function falarPalavra(palavra: string, pronuncia: Record<string, string>, idioma = "pt"): string {
   const [, antes, miolo, depois] = palavra.match(/^([("“'«]*)(.*?)([)"”'».,;:!?…]*)$/) ?? ["", "", palavra, ""];
   let falado = miolo;
   const trocar = Object.entries(pronuncia).find(([de]) => de.toLowerCase() === miolo.toLowerCase());
   let m: RegExpMatchArray | null;
   if (trocar) falado = trocar[1];
+  // Em inglês e em espanhol a voz já lê números, horas e preços na língua dela:
+  // só o @ e o site viram palavras (o resto, em português, é deste arquivo)
+  else if (idioma !== "pt") {
+    const arroba = idioma === "es" ? "arroba" : "at";
+    const ponto = idioma === "es" ? "punto" : "dot";
+    if ((m = miolo.match(/^@([\w.]+)$/))) falado = `${arroba} ${m[1].split(".").filter(Boolean).join(` ${ponto} `).replace(/_/g, " ")}`;
+    else if ((m = miolo.match(/^(?:https?:\/\/)?(?:www\.)?((?:[a-z0-9-]+\.)+[a-z]{2,})(?:\/\S*)?$/i)))
+      falado = m[1].split(".").join(` ${ponto} `).replace(/-/g, " ");
+  }
   else if ((m = miolo.match(/^R\$\s?(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?$/))) {
     const reais = inteiro(m[1]);
     const centavos = m[2] ? Number(m[2].padEnd(2, "0")) : 0;
@@ -71,7 +90,7 @@ function falarPalavra(palavra: string, pronuncia: Record<string, string>): strin
 export type Palavra = { original: string; falado: string };
 
 /** O roteiro em palavras, cada uma com o que a voz lê */
-export function falar(roteiro: string, pronuncia: Record<string, string> = {}): Palavra[] {
+export function falar(roteiro: string, pronuncia: Record<string, string> = {}, idioma = "pt"): Palavra[] {
   // Nome composto ("Millar Burrows": "Mílar Bárrous"): a voz lê palavra por
   // palavra, então cada palavra ganha a sua pronúncia (quando os dois lados têm
   // o mesmo número de palavras)
@@ -85,7 +104,7 @@ export function falar(roteiro: string, pronuncia: Record<string, string> = {}): 
   pronuncia = porPalavra;
   // "R$ 12,90" é uma palavra só
   const palavras = roteiro.replace(/R\$\s+(?=\d)/g, "R$").split(/\s+/).filter(Boolean);
-  return palavras.map((original) => ({ original, falado: falarPalavra(original, pronuncia) }));
+  return palavras.map((original) => ({ original, falado: falarPalavra(original, pronuncia, idioma) }));
 }
 
 /** Para comparar: minúsculas, sem acento e sem pontuação */
@@ -220,7 +239,8 @@ export function alinhar(roteiro: Palavra[], ouvidas: Ouvida[], duracao: number) 
   }
 
   const legendas: Legenda[] = roteiro.map((p, indice) => ({
-    texto: p.original.replace(/[.,;:]+$/, "").replace(/^R\$(?=\d)/, "R$ "),
+    // A palavra como está no roteiro: as vírgulas ajudam a ler; só o ponto final sai
+    texto: p.original.replace(/(?<!\.)\.$/, "").replace(/^R\$(?=\d)/, "R$ "),
     inicioMs: Math.round(tempos[indice].inicio * 1000),
     fimMs: Math.round(Math.max(tempos[indice].fim, tempos[indice].inicio + 0.05) * 1000),
   }));

@@ -16,7 +16,7 @@ import { Legendas } from "../componentes/texto/Legendas";
 import { Texto } from "../componentes/texto/Texto";
 import { duracaoDoMolde, quadrosDaFala, TEMPOS } from "./tempos";
 
-// Vídeo 9:16 com narração: uma voz em português lê a "fala" de cada cena, com
+// Vídeo 9:16 com narração: uma voz (no idioma do canal: português, inglês ou espanhol) lê a "fala" de cada cena, com
 // legenda animada palavra por palavra e, se quiser, o mascote falando junto.
 // Cada cena mostra um título, uma foto, o site no celular ou uma animação, e
 // dura o tempo da fala. A voz é gerada no computador com `npm run narrar`
@@ -53,7 +53,10 @@ export const narradoSchema = z.object({
     )
     .min(1)
     .max(12),
-  voz: z.enum(["pf_dora", "pm_alex", "pm_santa"]).default("pf_dora").describe("pf_dora (feminina), pm_alex ou pm_santa (masculinas)"),
+  voz: z
+    .string()
+    .default("pf_dora")
+    .describe("Id de src/componentes/personagens/vozes.ts (feminina-1..15, masculina-1..15) ou o nome do Kokoro (pf_dora, pm_alex, pm_santa)"),
   velocidade: z.number().min(0.7).max(1.4).default(1),
   pronuncia: z.record(z.string(), z.string()).optional().describe('Como a voz deve ler uma palavra: {"Kombi": "Cômbi"}'),
   legendas: z.boolean().default(true),

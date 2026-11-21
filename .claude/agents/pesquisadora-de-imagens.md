@@ -19,11 +19,19 @@ de pinturas, gravuras, mapas e fotos reais, e o YouTube pede para marcar conteú
 Pixabay marca como IA; se ainda assim uma candidata parecer IA (pele de plástico, mãos estranhas, luz de cinema
 perfeita), recuse.
 
-Só valem imagens **livres para uso comercial sem crédito obrigatório**: domínio público e CC0. O `npm run buscar-fotos`
-já filtra isso (Art Institute of Chicago, Cleveland Museum of Art, Wikimedia Commons e Openverse) e anota cada uma em
-`CREDITOS.md`. Nunca baixe de outro lugar (nada de Google Imagens: a maior parte tem dono, mesmo em vídeo educativo).
+Só valem imagens **livres para uso comercial**: domínio público e CC0 (Art Institute of Chicago, Cleveland Museum of
+Art, The Met, Wikimedia Commons, Openverse), a licença do Pixabay e a do **Unsplash** (fotos modernas: boas para a
+parte de hoje do vídeo). O `npm run buscar-fotos` já filtra isso e anota cada uma em `CREDITOS.md`. **Foto do
+Unsplash tem crédito obrigatório:** o buscar-fotos avisa o Unsplash e mostra "CRÉDITO OBRIGATÓRIO ... Foto de
+<autor> no Unsplash"; passe esse crédito para a roteirista pôr no fim da legenda do post (o `npm run conferir` barra
+sem ele). Nunca baixe de outro lugar (nada de Google Imagens: a maior parte tem dono, mesmo em vídeo educativo).
 
 ## 1. Busque candidatas
+
+Antes, leia em `canais/<canal>/canal-postai.md` as referências com "Buscar as mesmas obras na fonte de domínio
+público": são os artistas e as obras dos vídeos que deram certo no nicho. Quando servirem à cena, prefira essas obras
+(busque pelo nome do artista e do tema, ex.: `"Gustave Doré Samson"`), sempre nos museus e acervos abaixo, nunca
+num vídeo ou print de outro canal.
 
 Para cada cena, use a `busca` do roteiro. Junte as cenas que podem usar a mesma imagem (mesmo lugar e época). Busque
 **todas as candidatas num comando só**, nos museus (busca em quatro acervos ao mesmo tempo, os museus primeiro: pinturas
@@ -78,7 +86,15 @@ Use **o mesmo termo** da busca das candidatas: assim o comando pega exatamente a
 guardadas), sem buscar de novo.
 
 Na dúvida sobre uma (rosto pequeno, texto), abra a imagem grande gravada antes de pô-la no roteiro.
-Ponha `"foto": "fotos/<peça>/<nome>.jpg"` em cada cena (e `"inteira": true` nos retratos e mapas). Regras:
+Ponha `"foto": "fotos/<peça>/<nome>.jpg"` em cada cena (e `"inteira": true` nos retratos e mapas).
+
+**Cena com `lugares` (mapa animado):** escolha um mapa antigo de domínio público onde **todos** os lugares
+aparecem, abra a imagem (Read) e ponha em `rota` onde fica cada lugar, em % da imagem, na mesma ordem:
+`"rota": [[67, 50], [55, 75], [45, 96]]` (`[x, y]`, 0,0 = canto de cima à esquerda). Não precisa de `inteira`.
+Depois do `npm run previa`, confira que cada ponto caiu no lugar certo do mapa; se não achar um mapa com todos os
+lugares, tire `lugares` e use a cena como foto comum.
+
+Regras:
 
 - toda cena com foto; a mesma imagem no máximo 3 vezes no vídeo, e com `movimento` diferente quando repetir em cenas
   seguidas;

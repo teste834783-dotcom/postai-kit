@@ -18,8 +18,15 @@ export const Legendas: React.FC<{
   caixa?: boolean;
   /** A largura livre para a legenda, em px (a tela menos as margens): define quantas letras cabem numa linha */
   largura?: number;
+  /** Fundo escuro (estilo noite): texto branco e a palavra falada em dourado */
+  noite?: boolean;
+  /** Outra fonte, peso e cores (os modelos do Canal dark); sem eles, os da marca */
+  fonte?: string;
+  peso?: number;
+  destaque?: string;
+  textoNoDestaque?: string;
   style?: React.CSSProperties;
-}> = ({ legendas, atraso = 0, tamanho = 76, caixa = false, largura = 940, style }) => {
+}> = ({ legendas, atraso = 0, tamanho = 76, caixa = false, largura = 940, noite = false, fonte, peso, destaque, textoNoDestaque, style }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const agora = ((frame - atraso) / fps) * 1000;
@@ -44,8 +51,8 @@ export const Legendas: React.FC<{
           whiteSpace: "nowrap",
           justifyContent: "center",
           gap: `0 ${tamanho * 0.28}px`,
-          fontFamily: fontes.titulo,
-          fontWeight: 800,
+          fontFamily: fonte ?? fontes.titulo,
+          fontWeight: peso ?? 800,
           fontSize: tamanho,
           lineHeight: 1.15,
           textAlign: "center",
@@ -55,13 +62,22 @@ export const Legendas: React.FC<{
         }}
       >
         {pagina.tokens.map((token, i) => {
-          const falando = token.fromMs <= agora && agora < token.toMs;
+          // Marcada até a próxima palavra começar: não pisca quando a voz mede curto (ex.: 140 ms)
+          const proxima = pagina.tokens[i + 1];
+          const falando = token.fromMs <= agora && agora < Math.max(token.toMs, proxima?.fromMs ?? token.toMs);
           return (
             <span
               key={i}
               style={{
-                color: falando ? cores.textoNoDestaque : cores.texto,
-                backgroundColor: falando ? cores.destaque : "transparent",
+                color: noite
+                  ? falando
+                    ? (destaque ?? "#F5C94A")
+                    : "#FFFFFF"
+                  : falando
+                    ? (textoNoDestaque ?? cores.textoNoDestaque)
+                    : cores.texto,
+                backgroundColor: noite || !falando ? "transparent" : (destaque ?? cores.destaque),
+                ...(noite ? { textShadow: "0 4px 14px rgba(0,0,0,0.7)" } : {}),
                 borderRadius: tamanho * 0.22,
                 padding: `0 ${tamanho * 0.14}px`,
                 scale: falando ? "1.06" : "1",
