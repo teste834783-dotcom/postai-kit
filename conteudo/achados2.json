@@ -1,0 +1,113 @@
+{
+ "termo": "Biblical Mysteries",
+ "videos": [
+  {
+   "link": "https://www.youtube.com/watch?v=Y5aqh5ynylw",
+   "porque": "Capítulo de Gênesis explicado em 8 min; nome genérico, parece dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=GI28Y7J2nwU",
+   "porque": "Título sensacionalista sobre os Manuscritos do Mar Morto, 31 min; provavelmente dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=iKrFiqGuS74",
+   "porque": "Bíblia etíope em vídeo longo, título de promessa; parece dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=CcdJOM6f5fo",
+   "porque": "Pergunta sobre história de Jesus, 13 min; formato narrado, provavelmente dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=TmqgYQsU6PA",
+   "porque": "Enoch e anjos caídos em formato de filme narrado; provavelmente dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=yYvKd7_iUQs",
+   "porque": "Título de alerta sobre os anjos caídos, 45 min; parece dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=vpMAaGQkmfg",
+   "porque": "Narração sobre a montanha dos anjos, 1 h; nome genérico, parece dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=n1MHv5CqAZo",
+   "porque": "Daniel 4 explicado com ilustrações, 30 min; parece dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=OGzXbqFAEDY",
+   "porque": "Descoberta em caverna antiga, 32 min; título de promessa, provavelmente dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=UEdnIAz1doI",
+   "porque": "Anjos caídos com título de revelação, 23 min; parece dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=9QOpzlJr56o",
+   "porque": "História bíblica de Jefté, vídeo longo; formato narrado, parece dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=YK8Uxr8Ya4w",
+   "porque": "Visões do Apocalipse explicadas, vídeo longo; parece dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=jr0703O0_OQ",
+   "porque": "Título de promessa sobre a Bíblia etíope, 26 min; parece dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=HQGxbgqd9hw",
+   "porque": "Texto sumério e criação, 35 min; formato de mistério, provavelmente dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=jiBLC_aNJvg",
+   "porque": "Documentário de arqueologia, 1h28; provavelmente dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=GCOx3zLb1t8",
+   "porque": "Título de alerta sobre anjos caídos, 18 min; formato dark provável. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=b48aTNZg530",
+   "porque": "Linha do tempo do Apocalipse, 35 min; nome genérico, parece dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=oFbspCBOeBY",
+   "porque": "História escondida de Santa Ana, 1h25; parece dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=_b0fj2m7MZQ",
+   "porque": "Gigantes de Gate, 12 min; nome genérico, provavelmente dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=ESZoYm8_bKk",
+   "porque": "Título sensacionalista sobre DNA dos Manuscritos, 28 min; parece dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=q6fr9KsWDoU",
+   "porque": "Livro de Enoch com título de lista, 37 min; provavelmente dark. (palpite)"
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=cYxvA8RX6E8",
+   "porque": "Tábuas sumérias e o Éden, vídeo longo; parece dark. (palpite)"
+  }
+ ],
+ "canais": [],
+ "cacada": {
+  "nicho": "Biblical Mysteries",
+  "excluir": [
+   "sermon",
+   "news",
+   "podcast",
+   "vlog",
+   "live",
+   "reaction",
+   "sabbath school",
+   "prophecy 2026",
+   "seminar",
+   "debate"
+  ],
+  "maxInscritos": 2000,
+  "minViews": 3000,
+  "dias": 7,
+  "juntar": true
+ }
+}
