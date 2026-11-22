@@ -1,0 +1,78 @@
+{
+ "termo": "Bonsai",
+ "videos": [
+  {
+   "link": "https://www.youtube.com/watch?v=Ogi9AgQEqT8",
+   "porque": "Lista em espanhol sobre os bonsais mais antigos; formato de lista, parece dark (palpite)."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=QR_tLZ7ucjE",
+   "porque": "Curiosidade em espanhol sobre árvores em vaso milenares; título de promessa, parece dark (palpite)."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=UYVE8tOpZuc",
+   "porque": "Lista em espanhol dos bonsais mais caros do mundo; formato de lista, pode ser dark (palpite)."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=lW8yJ_8VC4A",
+   "porque": "Título de segredo/mistério sobre bonsai em espanhol; parece formato dark (palpite)."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=3fA4dE9EjqI",
+   "porque": "Documentário em espanhol sobre o mundo do bonsai; pode ser narrado, incerto se é dark."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=lSDi2cBCV1U",
+   "porque": "Como e quando regar bonsai em espanhol, bem explicado; formato educativo, incerto se é dark."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=tPllRg69oXk",
+   "porque": "Lista de erros em bonsai em espanhol; título em primeira pessoa, provavelmente não é dark."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=UWzdnSeVPI0",
+   "porque": "História do bonsai que sobreviveu a Hiroshima; narrativa, parece dark (palpite), título em inglês."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=qrchkbhtEtE",
+   "porque": "Árvore que sobreviveu a Hiroshima e ninguém soube por 25 anos; história com gancho, parece dark (palpite)."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=wW3kZ786fxI",
+   "porque": "Bonsais mais velhos que impérios; lista com promessa, parece dark (palpite)."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=1VdT4SMNLdQ",
+   "porque": "Lista de 7 bonsais raros; nome genérico, provavelmente dark (palpite)."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=toiJ2p-5IPM",
+   "porque": "História do bonsai mais antigo do mundo, 800 anos; narrativa, parece dark (palpite)."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=PwMnBzs2YII",
+   "porque": "Mitos de rega que matam bonsais; promessa no título, incerto se é dark."
+  },
+  {
+   "link": "https://www.youtube.com/watch?v=UiDDNP5rvyE",
+   "porque": "Cuidar de um bonsai desde o primeiro dia, em espanhol; guia simples, incerto se é dark."
+  }
+ ],
+ "canais": [],
+ "cacada": {
+  "nicho": "Bonsai",
+  "excluir": [
+   "noticias",
+   "oferta",
+   "sorteo",
+   "podcast",
+   "vlog",
+   "tour",
+   "en vivo",
+   "juego"
+  ],
+  "maxInscritos": 2000,
+  "minViews": 3000,
+  "dias": 7
+ }
+}
