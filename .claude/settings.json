@@ -2,7 +2,21 @@
   "permissions": {
     "allow": [
       "Bash(source ferramentas/nuvem.sh)",
-      "Bash(npm run renderizar:*)"
+      "Bash(npm run renderizar:*)",
+      "Bash(npm run fundo:*)",
+      "Bash(npm run esperar:*)",
+      "Bash(npm run previa:*)",
+      "Bash(npm run narrar:*)",
+      "Bash(npm run conferir:*)",
+      "Bash(npm run checar:*)",
+      "Bash(npm run canal:*)",
+      "Bash(npm run elenco:*)",
+      "Bash(npm run personagem:*)",
+      "Bash(npm run andamento:*)",
+      "Bash(npm run ponto:*)",
+      "Bash(npm run pauta:*)",
+      "Bash(npm run ajustes:*)",
+      "Bash(npm run limite:*)"
     ]
   }
 }
