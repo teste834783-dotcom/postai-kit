@@ -29,7 +29,7 @@ genéricos". Monetiza quando **cada vídeo tem história, foco e conceito própr
 | `checadora` | confere cada fato com as fontes e a forma do roteiro; devolve APROVADO ou CORRIGIR |
 | `pesquisadora-de-imagens` | baixa as imagens livres (Wikimedia Commons e Openverse), **olha cada uma** e põe no roteiro |
 | `producao` | narra e renderiza (o mesmo de sempre) |
-| `critica-narrado` | assiste por amostras, ouve o começo e decide se está bom para o dono |
+| `critica-narrado` | olha a prévia antes do render (imagens, legendas, capa) e depois confere o vídeo pronto |
 | `publicacao` | manda para aprovação e registra o episódio (o mesmo de sempre) |
 
 ## Passo a passo da coordenadora
@@ -52,21 +52,32 @@ Conte o andamento de cada agente como sempre (`npm run andamento`). Antes de cad
    - se o `narrar` avisou que alguma fala mudou, narre de novo;
    - confira a duração total: se ficou mais de 20% longe da duração do canal, a roteirista corta ou acrescenta cenas
      (ela mantém as fontes), a pesquisadora põe imagem só nas cenas novas e a produção narra de novo.
-5. **producao:** só com o `npm run conferir -- conteudo/<arquivo>.json --com-voz` limpo, `npm run previa` e depois renderizar (`npm run renderizar`), também em segundo plano. O vídeo longo demora: uns 4 a 5 minutos de
-   narração e render por minuto de vídeo (num Mac M1, 6 minutos levaram 26). Não pare no meio.
-6. **critica-narrado:** assistir. Se vier CORRIGIR, mande cada item para quem ela disse e renderize de novo (no máximo
-   2 voltas). Se ainda ficar algo, a publicação usa `--duvida`.
-7. **publicacao:** mandar para aprovação (o `npm run aprovar` já manda como vídeo longo, só para o YouTube, com os
+5. **producao:** só com o `npm run conferir -- conteudo/<arquivo>.json --com-voz` limpo, a prévia: `npm run previa`
+   (um quadro de CADA cena, uns 30 segundos num vídeo de 80 cenas) e `npm run renderizar -- conteudo/<arquivo>.json --capa`
+   (só a capa).
+6. **critica-narrado, na prévia (antes do render):** olha cada quadro da prévia, a capa e as falas. Se vier CORRIGIR,
+   mande cada item para quem ela disse, refaça a prévia (o `npm run previa` só refaz as cenas que mudaram e lista
+   quais em `previaMudou` no info.json) e chame a crítica de novo dizendo que é a 2ª (ou 3ª) volta (no máximo 3
+   voltas: a prévia é barata). **Só renderize com a prévia APROVADA.** Antes, um erro de imagem só aparecia no vídeo pronto e custava um
+   render inteiro de novo (até 1 hora num vídeo de 10 minutos).
+7. **producao:** renderizar (`npm run renderizar`) em segundo plano, uma vez. O vídeo longo demora: uns 4 a 5 minutos
+   de narração e render por minuto de vídeo. Não pare no meio.
+8. **critica-narrado, no vídeo pronto:** a conferência rápida (voz, música, duração, quadro quebrado). Se vier
+   CORRIGIR, mande cada item para quem ela disse e renderize de novo (no máximo 1 volta). Se ainda ficar algo, a
+   publicação usa `--duvida`.
+9. **publicacao:** mandar para aprovação (o `npm run aprovar` já manda como vídeo longo, só para o YouTube, com os
    capítulos na descrição) e registrar o episódio.
 
-Num **ajuste** pedido pelo dono, o roteiro guardado vem em `conteudo/ajuste-<corteId>.json`: mude só o que ele pediu
-(texto com a roteirista e a checadora, imagem com a pesquisadora), narre de novo, renderize, crítica e
-`npm run aprovar -- ... --substitui <corteId>`.
+Num **ajuste** (pedido pelo dono ou a refação que a crítica pediu), o roteiro vem em `conteudo/ajuste-<corteId>.json`.
+Se o `npm run ajustes` disser **"pacote de volta"**, as fotos e a voz do vídeo já estão nesta máquina: mude só o que foi
+pedido (texto com a roteirista e a checadora, imagem com a pesquisadora), NÃO busque de novo as fotos que não mudaram
+e rode o `narrar` normal (ele só refaz a voz das cenas que mudaram). Sem o pacote (vídeo antigo), busque as imagens e
+narre tudo. Depois prévia, crítica na prévia, renderize, crítica no vídeo pronto e `npm run aprovar -- ... --substitui <corteId>`.
 
 ## Regras de forma
 
-- **Duração:** a do canal (8, 10 ou 15 minutos), com uns 140 palavras por minuto de fala. Um vídeo de 10 minutos tem
-  umas 1.400 palavras em 60 a 90 cenas.
+- **Duração:** a do canal (8, 10 ou 15 minutos), com uns 185 palavras por minuto de fala (a voz fala rápido: medido em 22/11/2026). Um vídeo de 10
+  minutos tem umas 1.850 palavras em 80 a 110 cenas. Com 140 por minuto, o roteiro saía 30% curto e voltava.
 - **Cenas:** cada `fala` com 1 a 3 frases (uns 8 a 20 segundos). Frases faladas, curtas, do jeito que se conta uma
   história em voz alta. Números e datas como se fala ("mil oitocentos e oito" pode ficar "1808": a voz lê certo).
 - **Capítulos:** de 4 a 8, o primeiro na cena 1 (vira o "00:00" da descrição do YouTube). Título de capítulo com até
@@ -76,7 +87,8 @@ Num **ajuste** pedido pelo dono, o roteiro guardado vem em `conteudo/ajuste-<cor
 - **Texto na tela** (`texto`): só data, lugar ou número, até 40 caracteres, e no máximo 1 a cada 5 cenas.
 - **Imagens:** o ideal é toda cena ter `foto`. Uma imagem pode voltar em cenas seguidas com `movimento` diferente, mas não mais
   que 3 vezes no vídeo. Retrato em pé ou mapa: `"inteira": true`.
-- **Faltou imagem (o acervo bloqueou, não achou):** o `buscar-fotos` gera com IA sozinho (ou `--fonte ia` com a cena descrita em inglês; até 20 por dia; o vídeo sai marcado como sintético no YouTube). NUNCA pare o vídeo por isso. Deixe a cena sem `foto`: ela continua a
+- **Imagem errada não entra:** se os acervos só trazem imagens que não mostram o que a fala diz (outra pessoa, outra época, outro modelo), gere a cena com IA (`--fonte ia` com a descrição em inglês) em vez de usar a errada.
+- **Faltou imagem (o acervo bloqueou, não achou):** o `buscar-fotos` gera com IA sozinho (ou `--fonte ia` com a cena descrita em inglês; até 40 por dia; o vídeo sai marcado como sintético no YouTube). NUNCA pare o vídeo por isso. Deixe a cena sem `foto`: ela continua a
   imagem da cena anterior, que fica mais tempo na tela com outro movimento. Só a cena 1 precisa de imagem, e o `conferir`
   só barra com mais de 2/3 das cenas sem imagem. Espalhe as imagens que achou pelo vídeo (uma a cada 2 ou 3 cenas) para
   nenhuma ficar mais de uns 30 s parada.
@@ -96,7 +108,14 @@ Num **ajuste** pedido pelo dono, o roteiro guardado vem em `conteudo/ajuste-<cor
 - **Capa:** `capa.titulo` com **até 4 palavras** (saem grandes, em maiúsculas e com contorno), que dão curiosidade sem
   repetir o título do vídeo e sem mentir (ex.: "SÓ UMA PEDRA"); `destaque` na palavra mais forte (sai em amarelo);
   `lado`: `esquerda` ou `direita`, o oposto ao rosto ou à figura principal da foto (o texto fica no alto desse lado);
-  `foto` a imagem mais marcante.
+  `foto` a imagem mais marcante. **Modelo da capa** (`capa.modelo`), um dos que a seção "Capa dos vídeos" do
+  `canal-postai.md` permite (sem a seção, qualquer um): `classico` (só o título), `circulo` (círculo vermelho no
+  detalhe), `seta` (seta do título até o detalhe), `zoom` (lupa com o detalhe ampliado), `dois-lados` (`foto` e
+  `foto2` lado a lado com VS e `rotulos`, ex.: antes e depois) ou `selo` (carimbo inclinado com `selo`, ex.:
+  "PROIBIDO"). Os que marcam um detalhe pedem `capa.marca` ({ x, y, raio } em % da CAPA): rode
+  `npm run renderizar -- conteudo/<arquivo>.json --capa` (só a capa, em segundos, sem voz), abra
+  `out/<arquivo>/capa.jpg` e ajuste a marca até cair no detalhe que dá curiosidade (um rosto, um objeto, uma
+  inscrição). Escolha o modelo que mais combina com a história deste vídeo.
 - **Post:** `post.titulo` com até 70 caracteres (o título do YouTube: a palavra-chave e o mais curioso nas
   primeiras palavras, porque a busca e a tela inicial cortam o resto) e
   `post.legenda` com 2 ou 3 parágrafos sobre o vídeo, as fontes principais e, por último, a linha

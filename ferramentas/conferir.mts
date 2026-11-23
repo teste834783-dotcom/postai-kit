@@ -59,7 +59,16 @@ if (peca.molde === "Documentario") {
   const doc = peca as unknown as {
     cenas?: CenaLonga[];
     encerramento?: string;
-    capa?: { titulo?: string; destaque?: string; foto?: string };
+    capa?: {
+      titulo?: string;
+      destaque?: string;
+      foto?: string;
+      modelo?: string;
+      foto2?: string;
+      rotulos?: unknown;
+      selo?: string;
+      marca?: { x?: unknown; y?: unknown };
+    };
     post?: { titulo?: string; legenda?: string };
   };
   const longas = doc.cenas ?? [];
@@ -67,7 +76,9 @@ if (peca.molde === "Documentario") {
   const canalMd = ["canais/dark/canal-postai.md", ...process.argv.slice(2).filter((a) => a.endsWith(".md"))].find(existsSync);
   const minutos = Number(/Uns (\d+) minutos/.exec(canalMd ? readFileSync(canalMd, "utf8") : "")?.[1] ?? 10);
   const total = longas.reduce((soma, c) => soma + palavras(c.fala), 0);
-  const alvo = minutos * 140;
+  // A voz fala uns 185 palavras por minuto, contando as pausas entre as cenas
+  // (medido em 22/11/2026; com 140, o roteiro saía 30% curto e voltava depois da narração)
+  const alvo = minutos * 185;
   const narrado = longas.every((c) => c.narracao?.duracaoSeg);
   // Cena sem voz vai muda para o vídeo. Parte narrada e parte não = algo gravou o
   // roteiro por cima da narração; com --com-voz (antes da prévia e do render),
@@ -77,6 +88,15 @@ if (peca.molde === "Documentario") {
   if (semVoz.length && (exigirVoz || semVoz.length < longas.length)) {
     erro("producao", `${semVoz.length} cena(s) sem voz (${semVoz.slice(0, 8).join(", ")}${semVoz.length > 8 ? "…" : ""}): rode o narrar de novo, ele só narra as que faltam`);
   }
+  // Duas cenas no mesmo áudio = uma fala tocando no lugar da outra (o defeito de
+  // 22/11/2026, quando cenas entravam no meio do roteiro)
+  const porAudio = new Map<string, number[]>();
+  longas.forEach((c, i) => {
+    const audio = (c.narracao as { audio?: string } | undefined)?.audio;
+    if (audio) porAudio.set(audio, [...(porAudio.get(audio) ?? []), i + 1]);
+  });
+  for (const cenas of porAudio.values())
+    if (cenas.length > 1) erro("producao", `as cenas ${cenas.join(", ")} usam o mesmo áudio: rode npm run narrar -- <arquivo> --refazer`);
   if (narrado) {
     const seg = longas.reduce((soma, c) => soma + Number(c.narracao?.duracaoSeg ?? 0), 0);
     if (Math.abs(seg - minutos * 60) > minutos * 60 * 0.2)
@@ -136,13 +156,28 @@ if (peca.molde === "Documentario") {
       erro("roteirista-narrado", `capa.destaque "${doc.capa.destaque}" não está no título da capa`);
   }
   if (!doc.capa?.foto) erro("pesquisadora-de-imagens", "falta capa.foto");
+  else if (!existsSync(`public/${doc.capa.foto}`)) erro("pesquisadora-de-imagens", `a capa.foto ${doc.capa.foto} não existe em public/`);
+  // Os modelos de capa: o que cada um precisa (antes, o erro só aparecia no fim do render, depois do vídeo inteiro)
+  const modelo = doc.capa?.modelo;
+  if (modelo && !["classico", "circulo", "seta", "zoom", "dois-lados", "selo"].includes(modelo))
+    erro("pesquisadora-de-imagens", `capa.modelo "${modelo}" não existe (classico, circulo, seta, zoom, dois-lados ou selo)`);
+  if (modelo === "dois-lados") {
+    if (!doc.capa?.foto2) erro("pesquisadora-de-imagens", "capa.modelo dois-lados precisa da capa.foto2");
+    else if (!existsSync(`public/${doc.capa.foto2}`)) erro("pesquisadora-de-imagens", `a capa.foto2 ${doc.capa.foto2} não existe em public/`);
+    const rotulos = doc.capa?.rotulos;
+    if (rotulos !== undefined && !(Array.isArray(rotulos) && rotulos.length === 2 && rotulos.every((r) => typeof r === "string" && r.length <= 14)))
+      erro("pesquisadora-de-imagens", 'capa.rotulos: dois textos de até 14 letras, ex.: ["1957", "HOJE"]');
+  }
+  if ((modelo === "circulo" || modelo === "seta" || modelo === "zoom") && !(typeof doc.capa?.marca?.x === "number" && typeof doc.capa?.marca?.y === "number"))
+    erro("pesquisadora-de-imagens", `capa.modelo ${modelo} precisa da capa.marca { x, y } (em % da capa): confira com npm run renderizar -- <roteiro> --capa`);
+  if (modelo === "selo" && !doc.capa?.selo) erro("pesquisadora-de-imagens", 'capa.modelo selo precisa do capa.selo (ex.: "PROIBIDO")');
   if (!doc.post?.titulo || !doc.post.legenda) erro("roteirista-narrado", "falta post.titulo ou post.legenda");
   else {
     if (tamanho(doc.post.titulo) > 100) erro("roteirista-narrado", `post.titulo com ${tamanho(doc.post.titulo)} caracteres (até 100)`);
     if (tamanho(doc.post.legenda) > 1800) erro("roteirista-narrado", `post.legenda com ${tamanho(doc.post.legenda)} caracteres (até 1.800: os capítulos entram depois)`);
   }
   // Foto do Unsplash (e a capa): o crédito na legenda do post é obrigatório (o buscar-fotos anota no CREDITOS.md)
-  const usadas = new Set([...usos.keys(), ...(doc.capa?.foto ? [doc.capa.foto] : [])]);
+  const usadas = new Set([...usos.keys(), ...(doc.capa?.foto ? [doc.capa.foto] : []), ...(doc.capa?.foto2 ? [doc.capa.foto2] : [])]);
   for (const pasta of new Set([...usadas].map((f) => f.split("/").slice(0, -1).join("/")))) {
     const caminho = `public/${pasta}/CREDITOS.md`;
     if (!existsSync(caminho)) continue;
